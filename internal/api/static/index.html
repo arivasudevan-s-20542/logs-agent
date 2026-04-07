@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZCOP Log Agent</title>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#c9d1d9;--text-muted:#8b949e;--accent:#58a6ff;--error:#f85149;--warn:#d29922;--info:#58a6ff;--debug:#8b949e;--success:#3fb950;--font:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace;--font-ui:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+header h1{font-family:var(--font-ui);font-size:16px;font-weight:600;color:var(--accent)}
+header .stats{font-size:12px;color:var(--text-muted);margin-left:auto;display:flex;gap:12px}
+header .stats span{display:flex;align-items:center;gap:4px}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.tab{padding:8px 20px;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;font-family:var(--font-ui);font-size:13px;transition:all .15s}
+.tab:hover{color:var(--text);background:rgba(88,166,255,.06)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.panel{display:none;flex:1;flex-direction:column;overflow:hidden}
+.panel.active{display:flex}
+/* Query Panel */
+.query-area{padding:12px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.query-input{display:flex;gap:8px}
+textarea#sql{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:var(--font);font-size:13px;resize:none;height:80px;outline:none;transition:border-color .15s}
+textarea#sql:focus{border-color:var(--accent)}
+.query-actions{display:flex;flex-direction:column;gap:4px}
+button{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:500;transition:opacity .15s}
+button:hover{opacity:.85}
+button.secondary{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.query-meta{font-size:11px;color:var(--text-muted);display:flex;gap:16px;padding:0 4px}
+.query-meta span{display:flex;align-items:center;gap:3px}
+.query-help{font-size:11px;color:var(--text-muted);padding:0 4px}
+/* Results Table */
+.results-wrap{flex:1;overflow:auto;padding:0 12px 12px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{position:sticky;top:0;background:var(--surface);color:var(--text-muted);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap;z-index:1}
+tbody td{padding:5px 10px;border-bottom:1px solid var(--border);max-width:600px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:top}
+tbody tr:hover{background:rgba(88,166,255,.04)}
+tbody tr:hover td{white-space:normal;word-break:break-word}
+.level-error{color:var(--error);font-weight:600}
+.level-warning{color:var(--warn)}
+.level-info{color:var(--info)}
+.level-debug{color:var(--debug)}
+/* Live Tail Panel */
+.tail-controls{padding:8px 12px;display:flex;gap:8px;align-items:center;background:var(--surface);border-bottom:1px solid var(--border)}
+.tail-controls input,.tail-controls select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:var(--font);font-size:12px}
+.tail-controls label{font-size:11px;color:var(--text-muted)}
+#tail-log{flex:1;overflow-y:auto;padding:8px 12px;font-size:12px;line-height:1.7}
+.tail-line{display:flex;gap:8px;padding:2px 0;border-bottom:1px solid rgba(48,54,61,.4)}
+.tail-line:hover{background:rgba(88,166,255,.04)}
+.tail-ts{color:var(--text-muted);flex-shrink:0;width:200px}
+.tail-lvl{flex-shrink:0;width:60px;font-weight:600}
+.tail-rid{color:var(--accent);flex-shrink:0;width:80px;cursor:pointer;text-decoration:underline}
+.tail-rid:hover{opacity:.7}
+.tail-msg{flex:1;word-break:break-word}
+/* Trace Panel */
+.trace-input{padding:12px;display:flex;gap:8px;align-items:center}
+.trace-input input{flex:1;max-width:400px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--font);font-size:13px;outline:none}
+.trace-input input:focus{border-color:var(--accent)}
+.trace-timeline{flex:1;overflow-y:auto;padding:0 12px 12px}
+.trace-entry{display:flex;gap:12px;padding:8px;border-left:3px solid var(--border);margin-left:16px;margin-bottom:4px;position:relative}
+.trace-entry::before{content:'';position:absolute;left:-8px;top:12px;width:12px;height:12px;background:var(--surface);border:2px solid var(--border);border-radius:50%}
+.trace-entry.trace-error{border-left-color:var(--error)}
+.trace-entry.trace-error::before{border-color:var(--error)}
+.trace-entry .trace-meta{flex-shrink:0;width:260px;color:var(--text-muted);font-size:11px;line-height:1.6}
+.trace-entry .trace-msg{flex:1;word-break:break-word}
+/* Quick queries */
+.quick-queries{display:flex;gap:6px;flex-wrap:wrap;padding:0 4px}
+.quick-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-muted);border-radius:12px;padding:2px 10px;font-size:11px;cursor:pointer}
+.quick-btn:hover{color:var(--text);border-color:var(--accent)}
+/* Connection indicator */
+.ws-status{width:8px;height:8px;border-radius:50%;background:var(--error)}
+.ws-status.connected{background:var(--success)}
+/* Empty state */
+.empty{text-align:center;padding:40px;color:var(--text-muted);font-family:var(--font-ui)}
+.empty h3{margin-bottom:8px;font-size:14px}
+</style>
+</head>
+<body>
+<header>
+  <h1>&#9783; ZCOP Log Agent</h1>
+  <div class="stats">
+    <span id="stat-total">-- entries</span>
+    <span id="stat-errors">-- errors</span>
+    <span id="stat-range">--</span>
+  </div>
+</header>
+<div class="tabs">
+  <div class="tab active" data-panel="query">&#9998; Query</div>
+  <div class="tab" data-panel="tail">&#9656; Live Tail</div>
+  <div class="tab" data-panel="trace">&#8634; Trace</div>
+</div>
+<main>
+  <!-- QUERY PANEL -->
+  <div class="panel active" id="panel-query">
+    <div class="query-area">
+      <div class="query-input">
+        <textarea id="sql" spellcheck="false" placeholder="SELECT * FROM logs WHERE level = 'ERROR' ORDER BY timestamp DESC LIMIT 100">SELECT * FROM logs WHERE level = 'ERROR' ORDER BY timestamp DESC LIMIT 100</textarea>
+        <div class="query-actions">
+          <button onclick="runQuery()">&#9654; Run (Ctrl+Enter)</button>
+          <button class="secondary" onclick="clearResults()">Clear</button>
+        </div>
+      </div>
+      <div class="quick-queries">
+        <span class="quick-btn" onclick="setQuery(`SELECT * FROM logs ORDER BY timestamp DESC LIMIT 200`)">Recent 200</span>
+        <span class="quick-btn" onclick="setQuery(`SELECT * FROM logs WHERE level = 'ERROR' ORDER BY timestamp DESC LIMIT 100`)">Errors</span>
+        <span class="quick-btn" onclick="setQuery(`SELECT level, COUNT(*) AS cnt FROM logs GROUP BY level ORDER BY cnt DESC`)">By Level</span>
+        <span class="quick-btn" onclick="setQuery(`SELECT uri, COUNT(*) AS cnt FROM logs WHERE uri IS NOT NULL GROUP BY uri ORDER BY cnt DESC LIMIT 20`)">Top Endpoints</span>
+        <span class="quick-btn" onclick="setQuery(`SELECT uid, COUNT(*) AS cnt FROM logs WHERE uid != 'anon' GROUP BY uid ORDER BY cnt DESC LIMIT 20`)">Top Users</span>
+        <span class="quick-btn" onclick="setQuery(`SELECT rid, COUNT(*) AS cnt FROM logs GROUP BY rid HAVING COUNT(*) > 5 ORDER BY cnt DESC LIMIT 20`)">Long Requests</span>
+        <span class="quick-btn" onclick="setQuery(`SELECT logger, COUNT(*) AS cnt FROM logs WHERE level = 'ERROR' GROUP BY logger ORDER BY cnt DESC LIMIT 15`)">Error Sources</span>
+        <span class="quick-btn" onclick="setQuery(`SELECT * FROM logs WHERE msg REGEX 'timeout|connection refused|exception' LIMIT 100`)">Exceptions</span>
+      </div>
+      <div class="query-meta">
+        <span id="q-rows">--</span>
+        <span id="q-time">--</span>
+        <span id="q-total">--</span>
+      </div>
+    </div>
+    <div class="results-wrap" id="results">
+      <div class="empty"><h3>Run a SQL query to explore your logs</h3>Press Ctrl+Enter or click Run</div>
+    </div>
+  </div>
+
+  <!-- LIVE TAIL PANEL -->
+  <div class="panel" id="panel-tail">
+    <div class="tail-controls">
+      <div class="ws-status" id="ws-indicator"></div>
+      <label>Level:</label>
+      <select id="tail-level" onchange="updateTailFilter()">
+        <option value="">All</option>
+        <option value="ERROR">ERROR</option>
+        <option value="WARNING">WARN</option>
+        <option value="INFO">INFO</option>
+        <option value="DEBUG">DEBUG</option>
+      </select>
+      <label>RID:</label>
+      <input id="tail-rid" placeholder="request id" oninput="updateTailFilter()" style="width:100px">
+      <label>UID:</label>
+      <input id="tail-uid" placeholder="user id" oninput="updateTailFilter()" style="width:80px">
+      <label>Search:</label>
+      <input id="tail-msg" placeholder="message contains" oninput="updateTailFilter()" style="width:160px">
+      <button onclick="clearTail()" class="secondary" style="margin-left:auto">Clear</button>
+      <label><input type="checkbox" id="tail-autoscroll" checked> Auto-scroll</label>
+    </div>
+    <div id="tail-log"></div>
+  </div>
+
+  <!-- TRACE PANEL -->
+  <div class="panel" id="panel-trace">
+    <div class="trace-input">
+      <input id="trace-rid" placeholder="Enter Request ID (rid) to trace..." onkeydown="if(event.key==='Enter')traceRequest()">
+      <button onclick="traceRequest()">Trace</button>
+    </div>
+    <div class="trace-timeline" id="trace-results">
+      <div class="empty"><h3>Enter a Request ID to see the full request lifecycle</h3></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = location.origin;
+
+// --- Tabs ---
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+    if (tab.dataset.panel === 'tail') connectWS();
+  };
+});
+
+// --- Query ---
+const sqlEl = document.getElementById('sql');
+sqlEl.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runQuery(); }
+});
+
+function setQuery(q) { sqlEl.value = q; runQuery(); }
+
+async function runQuery() {
+  const sql = sqlEl.value.trim();
+  if (!sql) return;
+  const el = document.getElementById('results');
+  el.innerHTML = '<div class="empty">Running...</div>';
+  try {
+    const res = await fetch(API + '/api/query', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({sql})
+    });
+    const data = await res.json();
+    if (data.error) {
+      el.innerHTML = '<div class="empty" style="color:var(--error)"><h3>Query Error</h3>' + esc(data.error) + '</div>';
+      return;
+    }
+    renderResults(data);
+  } catch(e) {
+    el.innerHTML = '<div class="empty" style="color:var(--error)"><h3>Network Error</h3>' + esc(e.message) + '</div>';
+  }
+}
+
+function renderResults(data) {
+  const el = document.getElementById('results');
+  document.getElementById('q-rows').textContent = data.rows ? data.rows.length + ' rows' : '0 rows';
+  document.getElementById('q-total').textContent = 'total: ' + data.total;
+  const ms = typeof data.elapsed === 'number' ? (data.elapsed / 1e6).toFixed(1) : '?';
+  document.getElementById('q-time').textContent = ms + ' ms';
+  if (!data.rows || data.rows.length === 0) {
+    el.innerHTML = '<div class="empty"><h3>No results</h3></div>';
+    return;
+  }
+  const cols = data.columns || Object.keys(data.rows[0]);
+  let html = '<table><thead><tr>';
+  cols.forEach(c => html += '<th>' + esc(c) + '</th>');
+  html += '</tr></thead><tbody>';
+  data.rows.forEach(row => {
+    html += '<tr>';
+    cols.forEach(c => {
+      let val = row[c] ?? '';
+      let cls = '';
+      if (c === 'level') cls = ' class="level-' + String(val).toLowerCase() + '"';
+      if (c === 'rid' && val) {
+        html += '<td><a href="#" onclick="traceFromTable(\'' + esc(String(val)) + '\');return false" style="color:var(--accent)">' + esc(String(val)) + '</a></td>';
+      } else {
+        html += '<td' + cls + '>' + esc(String(val)) + '</td>';
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function clearResults() {
+  document.getElementById('results').innerHTML = '<div class="empty"><h3>Run a SQL query to explore your logs</h3></div>';
+  document.getElementById('q-rows').textContent = '--';
+  document.getElementById('q-time').textContent = '--';
+  document.getElementById('q-total').textContent = '--';
+}
+
+// --- Live Tail ---
+let ws = null;
+function connectWS() {
+  if (ws && ws.readyState <= 1) return;
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = proto + '//' + location.host + '/api/tail';
+  ws = new WebSocket(url);
+  ws.onopen = () => {
+    document.getElementById('ws-indicator').classList.add('connected');
+    updateTailFilter();
+  };
+  ws.onclose = () => {
+    document.getElementById('ws-indicator').classList.remove('connected');
+    setTimeout(connectWS, 3000);
+  };
+  ws.onerror = () => ws.close();
+  ws.onmessage = e => {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.type === 'log') appendTailLine(data);
+    } catch(err) {}
+  };
+}
+
+function appendTailLine(d) {
+  const container = document.getElementById('tail-log');
+  const line = document.createElement('div');
+  line.className = 'tail-line';
+  const ts = d.timestamp ? new Date(d.timestamp).toISOString().replace('T',' ').slice(0,23) : '';
+  line.innerHTML =
+    '<span class="tail-ts">' + ts + '</span>' +
+    '<span class="tail-lvl level-' + (d.level||'').toLowerCase() + '">' + esc(d.level||'') + '</span>' +
+    '<span class="tail-rid" onclick="traceFromTail(\'' + esc(d.rid||'') + '\')">' + esc(d.rid||'') + '</span>' +
+    '<span class="tail-msg">' + esc(d.msg||'') + '</span>';
+  container.appendChild(line);
+  // Keep max 2000 lines
+  while (container.children.length > 2000) container.removeChild(container.firstChild);
+  if (document.getElementById('tail-autoscroll').checked) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+function updateTailFilter() {
+  if (!ws || ws.readyState !== 1) return;
+  ws.send(JSON.stringify({
+    level: document.getElementById('tail-level').value,
+    rid: document.getElementById('tail-rid').value,
+    uid: document.getElementById('tail-uid').value,
+    msg: document.getElementById('tail-msg').value
+  }));
+}
+
+function clearTail() { document.getElementById('tail-log').innerHTML = ''; }
+
+// --- Trace ---
+async function traceRequest() {
+  const rid = document.getElementById('trace-rid').value.trim();
+  if (!rid) return;
+  const el = document.getElementById('trace-results');
+  el.innerHTML = '<div class="empty">Tracing...</div>';
+  try {
+    const res = await fetch(API + '/api/trace/' + encodeURIComponent(rid));
+    const data = await res.json();
+    if (!data.logs || data.logs.length === 0) {
+      el.innerHTML = '<div class="empty"><h3>No logs found for RID: ' + esc(rid) + '</h3></div>';
+      return;
+    }
+    let html = '<div style="padding:4px 0 12px;color:var(--text-muted);font-size:12px">Request <b style="color:var(--accent)">' + esc(rid) + '</b> — ' + data.count + ' log entries</div>';
+    data.logs.forEach(log => {
+      const lvl = (log.level||'').toLowerCase();
+      const cls = lvl === 'error' ? ' trace-error' : '';
+      const ts = log.timestamp ? new Date(log.timestamp).toISOString().replace('T',' ').slice(0,23) : '';
+      html += '<div class="trace-entry' + cls + '">';
+      html += '<div class="trace-meta">';
+      html += '<div>' + ts + '</div>';
+      html += '<div class="level-' + lvl + '">' + esc(log.level||'') + '</div>';
+      html += '<div>' + esc(log.thread||'') + '</div>';
+      html += '<div>' + esc(log.logger||'') + '</div>';
+      html += '<div>uid:' + esc(log.uid||'-') + ' file:' + esc(log.file||'-') + '</div>';
+      html += '</div>';
+      html += '<div class="trace-msg">' + esc(log.msg||'') + '</div>';
+      html += '</div>';
+    });
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div class="empty" style="color:var(--error)">Error: ' + esc(e.message) + '</div>';
+  }
+}
+
+function traceFromTable(rid) {
+  document.getElementById('trace-rid').value = rid;
+  document.querySelectorAll('.tab')[2].click();
+  traceRequest();
+}
+function traceFromTail(rid) {
+  if (!rid) return;
+  document.getElementById('trace-rid').value = rid;
+  document.querySelectorAll('.tab')[2].click();
+  traceRequest();
+}
+
+// --- Stats ---
+async function loadStats() {
+  try {
+    const res = await fetch(API + '/api/stats');
+    const data = await res.json();
+    document.getElementById('stat-total').textContent = (data.totalEntries||0).toLocaleString() + ' entries';
+    const errors = (data.levelCounts||{})['ERROR'] || 0;
+    document.getElementById('stat-errors').innerHTML = '<span style="color:var(--error)">' + errors + ' errors</span>';
+    if (data.oldestEntry && data.newestEntry) {
+      const from = data.oldestEntry.slice(0,16).replace('T',' ');
+      const to = data.newestEntry.slice(0,16).replace('T',' ');
+      document.getElementById('stat-range').textContent = from + ' → ' + to;
+    }
+  } catch(e) {}
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Init
+loadStats();
+setInterval(loadStats, 10000);
+</script>
+</body>
+</html>
