@@ -5,9 +5,11 @@
 # Deploy:  Push to main/master → SCP binary to VPS → restart systemd service
 #
 # GitHub Secrets required (shared with zcop backend):
-#   DEPLOY_SSH_KEY  — private key for the deploy user on the VPS
-#   VPS_HOST        — hostname / IP of the production VPS
-#   VPS_USER        — SSH username (e.g. root / deploy)
+#   DEPLOY_SSH_KEY        — private key for the deploy user on the VPS
+#   VPS_HOST              — hostname / IP of the production VPS
+#   VPS_USER              — SSH username (e.g. root / deploy)
+#   LOG_AGENT_MCP_TOKEN   — bearer token for MCP SSE auth (optional, open if unset)
+#   LOG_AGENT_MCP_IPS     — comma-separated allowed IPs/CIDRs for MCP (optional)
 #
 # App directory on the VPS: /opt/zcop-log-agent
 # Log directory:            /opt/zcop/logs  (read by the agent)
@@ -84,6 +86,25 @@ jobs:
 
             # ── Ensure directories exist ────────────────────────────────────
             mkdir -p "$APP_DIR"
+
+            # ── Write .env (idempotent — preserves manual edits if exists) ──
+            if [ ! -f "$APP_DIR/.env" ]; then
+              cat > "$APP_DIR/.env" <<ENVFILE
+            LOG_AGENT_PORT=4080
+            LOG_AGENT_AUTH_ENABLED=true
+            LOG_AGENT_USERNAME=admin
+            LOG_AGENT_PASSWORD=changeme
+            LOG_AGENT_LOG_DIRS=/opt/zcop/logs
+            LOG_AGENT_HOT_WINDOW=24h
+            LOG_AGENT_MCP_PORT=4081
+            LOG_AGENT_MCP_TOKEN=${{ secrets.LOG_AGENT_MCP_TOKEN }}
+            LOG_AGENT_MCP_ALLOWED_IPS=${{ secrets.LOG_AGENT_MCP_IPS }}
+            ENVFILE
+              chmod 600 "$APP_DIR/.env"
+              echo "Created default .env — update credentials before production use"
+            else
+              echo ".env already exists — skipping (edit manually on VPS)"
+            fi
 
             # ── Write the systemd unit (idempotent) ─────────────────────────
             sudo tee /etc/systemd/system/zcop-log-agent.service > /dev/null <<EOF
