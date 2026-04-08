@@ -57,14 +57,12 @@ func (s *Server) ServeStdio(ctx context.Context) error {
 	return stdio.Listen(ctx, nil, nil)
 }
 
-// ServeSSE starts the MCP server over HTTP/SSE with auth + IP restrictions.
+// ServeSSE starts the MCP server over Streamable HTTP with auth + IP restrictions.
 func (s *Server) ServeSSE(ctx context.Context, addr string) error {
-	sseServer := server.NewSSEServer(s.mcpServer,
-		server.WithBaseURL(fmt.Sprintf("http://%s", addr)),
-	)
+	streamServer := server.NewStreamableHTTPServer(s.mcpServer)
 
 	mux := http.NewServeMux()
-	mux.Handle("/", sseServer)
+	mux.Handle("/", streamServer)
 
 	var handler http.Handler = mux
 	if len(s.allowedIPs) > 0 {
@@ -84,7 +82,7 @@ func (s *Server) ServeSSE(ctx context.Context, addr string) error {
 		httpServer.Shutdown(shutdownCtx)
 	}()
 
-	log.Printf("[mcp] SSE server listening on %s", addr)
+	log.Printf("[mcp] Streamable HTTP server listening on %s", addr)
 	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err
 	}
