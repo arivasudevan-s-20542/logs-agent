@@ -99,6 +99,15 @@ jobs:
             sudo systemctl daemon-reload
             sudo systemctl enable zcop-log-agent
 
+      - name: Stop service before replacing binary
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            sudo systemctl stop zcop-log-agent 2>/dev/null || true
+
       - name: SCP binary to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
