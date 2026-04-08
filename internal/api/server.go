@@ -44,12 +44,27 @@ func (s *Server) Handler() http.Handler {
 	handler = corsMiddleware(s.cfg.CORSOrigins, handler)
 
 	if s.cfg.AuthEnabled {
-		handler = auth.Middleware(s.cfg.Username, s.cfg.Password, handler)
+		handler = skipAuthPaths(auth.Middleware(s.cfg.Username, s.cfg.Password, handler), handler, "/api/health")
 	}
 
 	handler = logMiddleware(handler)
 
 	return handler
+}
+
+// skipAuthPaths bypasses the auth middleware for specific paths (e.g. health checks).
+func skipAuthPaths(authed, raw http.Handler, paths ...string) http.Handler {
+	skip := make(map[string]struct{}, len(paths))
+	for _, p := range paths {
+		skip[p] = struct{}{}
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := skip[r.URL.Path]; ok {
+			raw.ServeHTTP(w, r)
+			return
+		}
+		authed.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) ListenAndServe() error {

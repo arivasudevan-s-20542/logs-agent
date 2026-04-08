@@ -84,45 +84,19 @@ jobs:
 
             echo "=== Deploying zcop-log-agent ==="
 
-            # ── Ensure directories exist ────────────────────────────────────
             mkdir -p "$APP_DIR"
 
-            # ── Write .env (idempotent — preserves manual edits if exists) ──
+            # ── Write .env if missing (printf avoids heredoc corruption by ssh-action) ──
             if [ ! -f "$APP_DIR/.env" ]; then
-              cat > "$APP_DIR/.env" <<ENVFILE
-            LOG_AGENT_PORT=4080
-            LOG_AGENT_AUTH_ENABLED=true
-            LOG_AGENT_USERNAME=admin
-            LOG_AGENT_PASSWORD=changeme
-            LOG_AGENT_LOG_DIRS=/opt/zcop/logs
-            LOG_AGENT_HOT_WINDOW=24h
-            LOG_AGENT_MCP_PORT=4081
-            LOG_AGENT_MCP_TOKEN=${{ secrets.LOG_AGENT_MCP_TOKEN }}
-            LOG_AGENT_MCP_ALLOWED_IPS=${{ secrets.LOG_AGENT_MCP_IPS }}
-            ENVFILE
+              printf 'LOG_AGENT_PORT=4080\nLOG_AGENT_AUTH_ENABLED=true\nLOG_AGENT_USERNAME=admin\nLOG_AGENT_PASSWORD=changeme\nLOG_AGENT_LOG_DIRS=/opt/zcop/logs\nLOG_AGENT_HOT_WINDOW=24h\nLOG_AGENT_MCP_PORT=4081\nLOG_AGENT_MCP_TOKEN=${{ secrets.LOG_AGENT_MCP_TOKEN }}\nLOG_AGENT_MCP_ALLOWED_IPS=${{ secrets.LOG_AGENT_MCP_IPS }}\n' > "$APP_DIR/.env"
               chmod 600 "$APP_DIR/.env"
               echo "Created default .env — update credentials before production use"
             else
               echo ".env already exists — skipping (edit manually on VPS)"
             fi
 
-            # ── Write the systemd unit (idempotent) ─────────────────────────
-            sudo tee /etc/systemd/system/zcop-log-agent.service > /dev/null <<EOF
-            [Unit]
-            Description=ZCOP Log Agent
-            After=network.target zcop.service
-
-            [Service]
-            User=$DEPLOY_USER
-            WorkingDirectory=$APP_DIR
-            ExecStart=$APP_DIR/logagent
-            EnvironmentFile=-$APP_DIR/.env
-            Restart=on-failure
-            RestartSec=5
-
-            [Install]
-            WantedBy=multi-user.target
-            EOF
+            # ── Write systemd unit (printf avoids heredoc corruption by ssh-action) ──
+            printf '[Unit]\nDescription=ZCOP Log Agent\nAfter=network.target zcop.service\n\n[Service]\nUser=%s\nWorkingDirectory=%s\nExecStart=%s/logagent\nEnvironmentFile=-%s/.env\nRestart=on-failure\nRestartSec=5\n\n[Install]\nWantedBy=multi-user.target\n' "$DEPLOY_USER" "$APP_DIR" "$APP_DIR" "$APP_DIR" | sudo tee /etc/systemd/system/zcop-log-agent.service > /dev/null
             sudo systemctl daemon-reload
             sudo systemctl enable zcop-log-agent
 
@@ -151,18 +125,9 @@ jobs:
             # ── Make binary executable ──────────────────────────────────────
             chmod +x "$APP_DIR/logagent"
 
-            # ── Create default config if missing ────────────────────────────
+            # ── Create default config if missing (printf avoids heredoc corruption) ──
             if [ ! -f "$APP_DIR/config.json" ]; then
-              cat > "$APP_DIR/config.json" <<CONF
-            {
-              "port": 4080,
-              "auth_enabled": true,
-              "username": "admin",
-              "password": "changeme",
-              "log_dirs": ["/opt/zcop/logs"],
-              "max_entries": 1000000
-            }
-            CONF
+              printf '{\n  "port": 4080,\n  "auth_enabled": true,\n  "username": "admin",\n  "password": "changeme",\n  "log_dirs": ["/opt/zcop/logs"],\n  "max_entries": 1000000\n}\n' > "$APP_DIR/config.json"
               echo "Created default config.json — update password before production use"
             fi
 
