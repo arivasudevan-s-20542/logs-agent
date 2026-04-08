@@ -1,0 +1,165 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CI/CD — zcop-log-agent (Go 1.22)
+#
+# Build:   Compile + vet on every push/PR
+# Deploy:  Push to main/master → SCP binary to VPS → restart systemd service
+#
+# GitHub Secrets required (shared with zcop backend):
+#   DEPLOY_SSH_KEY  — private key for the deploy user on the VPS
+#   VPS_HOST        — hostname / IP of the production VPS
+#   VPS_USER        — SSH username (e.g. root / deploy)
+#
+# App directory on the VPS: /opt/zcop-log-agent
+# Log directory:            /opt/zcop/logs  (read by the agent)
+# Config override:          /opt/zcop-log-agent/config.json (optional)
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: CI/CD — Log Agent
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # ── 1. Build & Vet ──────────────────────────────────────────────────────
+  build:
+    name: Build & Vet
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o logagent ./cmd/logagent
+
+      - name: Upload artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: logagent-linux-amd64
+          path: logagent
+          retention-days: 5
+
+  # ── 2. Deploy to VPS ────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: logagent-linux-amd64
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            APP_DIR="/opt/zcop-log-agent"
+            DEPLOY_USER="${{ secrets.VPS_USER }}"
+
+            echo "=== Deploying zcop-log-agent ==="
+
+            # ── Ensure directories exist ────────────────────────────────────
+            mkdir -p "$APP_DIR"
+
+            # ── Write the systemd unit (idempotent) ─────────────────────────
+            sudo tee /etc/systemd/system/zcop-log-agent.service > /dev/null <<EOF
+            [Unit]
+            Description=ZCOP Log Agent
+            After=network.target zcop.service
+
+            [Service]
+            User=$DEPLOY_USER
+            WorkingDirectory=$APP_DIR
+            ExecStart=$APP_DIR/logagent
+            EnvironmentFile=-$APP_DIR/.env
+            Restart=on-failure
+            RestartSec=5
+
+            [Install]
+            WantedBy=multi-user.target
+            EOF
+            sudo systemctl daemon-reload
+            sudo systemctl enable zcop-log-agent
+
+      - name: SCP binary to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: logagent
+          target: /opt/zcop-log-agent/
+          overwrite: true
+
+      - name: Restart service
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            APP_DIR="/opt/zcop-log-agent"
+
+            # ── Make binary executable ──────────────────────────────────────
+            chmod +x "$APP_DIR/logagent"
+
+            # ── Create default config if missing ────────────────────────────
+            if [ ! -f "$APP_DIR/config.json" ]; then
+              cat > "$APP_DIR/config.json" <<CONF
+            {
+              "port": 4080,
+              "auth_enabled": true,
+              "username": "admin",
+              "password": "changeme",
+              "log_dirs": ["/opt/zcop/logs"],
+              "max_entries": 1000000
+            }
+            CONF
+              echo "Created default config.json — update password before production use"
+            fi
+
+            # ── Restart ────────────────────────────────────────────────────
+            sudo systemctl reset-failed zcop-log-agent 2>/dev/null || true
+            sudo systemctl restart zcop-log-agent
+
+            # ── Health check ───────────────────────────────────────────────
+            echo "Waiting for log agent to come up..."
+            for i in $(seq 1 10); do
+              sleep 1
+              if curl -sf http://localhost:4080/api/health > /dev/null 2>&1; then
+                echo "Log agent deployed successfully ✓"
+                exit 0
+              fi
+            done
+
+            echo "==== zcop-log-agent failed to start ===="
+            sudo systemctl status zcop-log-agent.service --no-pager -l || true
+            sudo journalctl -u zcop-log-agent.service --no-pager -n 30 || true
+            exit 1

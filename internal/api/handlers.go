@@ -15,6 +15,7 @@ const maxQuerySize = 4096
 // Handlers contains all REST API handlers.
 type Handlers struct {
 	store *store.Store
+	index *store.FileIndex
 }
 
 // Query executes a SQL query against the log store.
@@ -86,7 +87,24 @@ func (h *Handlers) Trace(w http.ResponseWriter, r *http.Request) {
 // Stats returns aggregate statistics.
 // GET /api/stats
 func (h *Handlers) Stats(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, h.store.Stats())
+	stats := h.store.Stats()
+	if h.index != nil {
+		stats["fileIndex"] = h.index.Summary()
+	}
+	writeJSON(w, http.StatusOK, stats)
+}
+
+// FileIndex returns the full file index with per-file metadata.
+// GET /api/files/index
+func (h *Handlers) FileIndex(w http.ResponseWriter, r *http.Request) {
+	if h.index == nil {
+		writeJSON(w, http.StatusOK, map[string]any{"files": []any{}})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"summary": h.index.Summary(),
+		"files":   h.index.All(),
+	})
 }
 
 // Files returns list of monitored log files with entry counts.

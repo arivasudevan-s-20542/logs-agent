@@ -5,15 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ZCOP Log Agent</title>
 <style>
-:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#c9d1d9;--text-muted:#8b949e;--accent:#58a6ff;--error:#f85149;--warn:#d29922;--info:#58a6ff;--debug:#8b949e;--success:#3fb950;--font:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace;--font-ui:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#c9d1d9;--text-muted:#8b949e;--accent:#58a6ff;--error:#f85149;--warn:#d29922;--info:#58a6ff;--debug:#8b949e;--success:#3fb950;--font:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace;--font-ui:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;--font-size:14px}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:16px;flex-shrink:0}
-header h1{font-family:var(--font-ui);font-size:16px;font-weight:600;color:var(--accent)}
-header .stats{font-size:12px;color:var(--text-muted);margin-left:auto;display:flex;gap:12px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:var(--font-size);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+header h1{font-family:var(--font-ui);font-size:18px;font-weight:600;color:var(--accent)}
+header .stats{font-size:13px;color:var(--text-muted);margin-left:auto;display:flex;gap:14px}
 header .stats span{display:flex;align-items:center;gap:4px}
 .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
-.tab{padding:8px 20px;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;font-family:var(--font-ui);font-size:13px;transition:all .15s}
+.tab{padding:10px 22px;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;font-family:var(--font-ui);font-size:14px;transition:all .15s}
 .tab:hover{color:var(--text);background:rgba(88,166,255,.06)}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 main{flex:1;overflow:hidden;display:flex;flex-direction:column}
@@ -21,60 +21,84 @@ main{flex:1;overflow:hidden;display:flex;flex-direction:column}
 .panel.active{display:flex}
 /* Query Panel */
 .query-area{padding:12px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
-.query-input{display:flex;gap:8px}
-textarea#sql{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:var(--font);font-size:13px;resize:none;height:80px;outline:none;transition:border-color .15s}
+.query-input{display:flex;gap:8px;position:relative}
+textarea#sql{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:var(--font);font-size:var(--font-size);resize:none;height:80px;outline:none;transition:border-color .15s}
 textarea#sql:focus{border-color:var(--accent)}
 .query-actions{display:flex;flex-direction:column;gap:4px}
-button{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:500;transition:opacity .15s}
+button{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-family:var(--font-ui);font-size:13px;font-weight:500;transition:opacity .15s}
 button:hover{opacity:.85}
 button.secondary{background:var(--surface);border:1px solid var(--border);color:var(--text)}
-.query-meta{font-size:11px;color:var(--text-muted);display:flex;gap:16px;padding:0 4px}
+.query-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 4px}
+.query-controls label{font-size:12px;color:var(--text-muted)}
+.query-controls select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-family:var(--font);font-size:13px}
+.query-meta{font-size:12px;color:var(--text-muted);display:flex;gap:16px;padding:0 4px}
 .query-meta span{display:flex;align-items:center;gap:3px}
-.query-help{font-size:11px;color:var(--text-muted);padding:0 4px}
 /* Results Table */
 .results-wrap{flex:1;overflow:auto;padding:0 12px 12px}
-table{width:100%;border-collapse:collapse;font-size:12px}
-thead th{position:sticky;top:0;background:var(--surface);color:var(--text-muted);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap;z-index:1}
-tbody td{padding:5px 10px;border-bottom:1px solid var(--border);max-width:600px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:top}
+table{width:100%;border-collapse:collapse;font-size:var(--font-size)}
+thead th{position:sticky;top:0;background:var(--surface);color:var(--text-muted);text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap;z-index:1;overflow:hidden;text-overflow:ellipsis;resize:horizontal}
+tbody td{padding:6px 10px;border-bottom:1px solid var(--border);max-width:600px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:top}
 tbody tr:hover{background:rgba(88,166,255,.04)}
-tbody tr:hover td{white-space:normal;word-break:break-word}
 .level-error{color:var(--error);font-weight:600}
 .level-warning{color:var(--warn)}
 .level-info{color:var(--info)}
 .level-debug{color:var(--debug)}
+/* Expand button for long messages */
+.expand-btn{background:none;border:1px solid var(--border);color:var(--accent);border-radius:3px;padding:1px 6px;font-size:11px;cursor:pointer;margin-left:6px;vertical-align:middle;line-height:1}
+.expand-btn:hover{background:var(--surface);border-color:var(--accent)}
+td.expanded{white-space:pre-wrap;word-break:break-word;max-width:none}
+/* Stack trace formatting */
+.stacktrace{margin-top:6px;padding:8px 10px;background:rgba(0,0,0,.3);border-radius:4px;border-left:3px solid var(--error);font-size:12px;line-height:1.6;overflow-x:auto}
+.st-exception{color:var(--error);font-weight:600}
+.st-at{color:var(--text-muted)}
+.st-class{color:var(--accent)}
+.st-method{color:var(--warn)}
+.st-file{color:var(--success)}
+.st-line{color:var(--warn)}
+.st-caused{color:var(--error);font-weight:600;margin-top:4px;display:inline-block}
+.st-more{color:var(--text-muted);font-style:italic}
+.msg-text{margin-bottom:4px}
+/* Quick queries */
+.quick-queries{display:flex;gap:6px;flex-wrap:wrap;padding:0 4px}
+.quick-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-muted);border-radius:12px;padding:3px 12px;font-size:12px;cursor:pointer;transition:all .15s}
+.quick-btn:hover{color:var(--text);border-color:var(--accent)}
+.quick-section{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.quick-label{font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+/* Autocomplete dropdown — compact, cursor-positioned */
+.ac-dropdown{position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:4px;max-height:180px;overflow-y:auto;z-index:100;display:none;box-shadow:0 4px 16px rgba(0,0,0,.5);min-width:140px;max-width:260px}
+.ac-dropdown.visible{display:block}
+.ac-item{padding:4px 10px;cursor:pointer;font-size:13px;color:var(--text);display:flex;gap:10px;align-items:center;white-space:nowrap}
+.ac-item:hover,.ac-item.selected{background:rgba(88,166,255,.15)}
+.ac-item .ac-type{color:var(--text-muted);font-size:10px;min-width:42px;text-align:right;flex-shrink:0}
 /* Live Tail Panel */
-.tail-controls{padding:8px 12px;display:flex;gap:8px;align-items:center;background:var(--surface);border-bottom:1px solid var(--border)}
-.tail-controls input,.tail-controls select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:var(--font);font-size:12px}
-.tail-controls label{font-size:11px;color:var(--text-muted)}
-#tail-log{flex:1;overflow-y:auto;padding:8px 12px;font-size:12px;line-height:1.7}
-.tail-line{display:flex;gap:8px;padding:2px 0;border-bottom:1px solid rgba(48,54,61,.4)}
+.tail-controls{padding:8px 12px;display:flex;gap:8px;align-items:center;background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tail-controls input,.tail-controls select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:var(--font);font-size:13px}
+.tail-controls label{font-size:12px;color:var(--text-muted)}
+#tail-log{flex:1;overflow-y:auto;padding:8px 12px;font-size:var(--font-size);line-height:1.7}
+.tail-line{display:flex;gap:8px;padding:3px 0;border-bottom:1px solid rgba(48,54,61,.4)}
 .tail-line:hover{background:rgba(88,166,255,.04)}
 .tail-ts{color:var(--text-muted);flex-shrink:0;width:200px}
-.tail-lvl{flex-shrink:0;width:60px;font-weight:600}
-.tail-rid{color:var(--accent);flex-shrink:0;width:80px;cursor:pointer;text-decoration:underline}
+.tail-lvl{flex-shrink:0;width:65px;font-weight:600}
+.tail-rid{color:var(--accent);flex-shrink:0;width:90px;cursor:pointer;text-decoration:underline}
 .tail-rid:hover{opacity:.7}
 .tail-msg{flex:1;word-break:break-word}
 /* Trace Panel */
 .trace-input{padding:12px;display:flex;gap:8px;align-items:center}
-.trace-input input{flex:1;max-width:400px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--font);font-size:13px;outline:none}
+.trace-input input{flex:1;max-width:400px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--font);font-size:var(--font-size);outline:none}
 .trace-input input:focus{border-color:var(--accent)}
 .trace-timeline{flex:1;overflow-y:auto;padding:0 12px 12px}
-.trace-entry{display:flex;gap:12px;padding:8px;border-left:3px solid var(--border);margin-left:16px;margin-bottom:4px;position:relative}
-.trace-entry::before{content:'';position:absolute;left:-8px;top:12px;width:12px;height:12px;background:var(--surface);border:2px solid var(--border);border-radius:50%}
+.trace-entry{display:flex;gap:12px;padding:10px;border-left:3px solid var(--border);margin-left:16px;margin-bottom:4px;position:relative}
+.trace-entry::before{content:'';position:absolute;left:-8px;top:14px;width:12px;height:12px;background:var(--surface);border:2px solid var(--border);border-radius:50%}
 .trace-entry.trace-error{border-left-color:var(--error)}
 .trace-entry.trace-error::before{border-color:var(--error)}
-.trace-entry .trace-meta{flex-shrink:0;width:260px;color:var(--text-muted);font-size:11px;line-height:1.6}
+.trace-entry .trace-meta{flex-shrink:0;width:260px;color:var(--text-muted);font-size:12px;line-height:1.6}
 .trace-entry .trace-msg{flex:1;word-break:break-word}
-/* Quick queries */
-.quick-queries{display:flex;gap:6px;flex-wrap:wrap;padding:0 4px}
-.quick-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-muted);border-radius:12px;padding:2px 10px;font-size:11px;cursor:pointer}
-.quick-btn:hover{color:var(--text);border-color:var(--accent)}
 /* Connection indicator */
-.ws-status{width:8px;height:8px;border-radius:50%;background:var(--error)}
+.ws-status{width:10px;height:10px;border-radius:50%;background:var(--error)}
 .ws-status.connected{background:var(--success)}
 /* Empty state */
 .empty{text-align:center;padding:40px;color:var(--text-muted);font-family:var(--font-ui)}
-.empty h3{margin-bottom:8px;font-size:14px}
+.empty h3{margin-bottom:8px;font-size:15px}
 </style>
 </head>
 <body>
@@ -97,20 +121,43 @@ tbody tr:hover td{white-space:normal;word-break:break-word}
     <div class="query-area">
       <div class="query-input">
         <textarea id="sql" spellcheck="false" placeholder="SELECT * FROM logs WHERE level = 'ERROR' ORDER BY timestamp DESC LIMIT 100">SELECT * FROM logs WHERE level = 'ERROR' ORDER BY timestamp DESC LIMIT 100</textarea>
+        <div class="ac-dropdown" id="ac-dropdown"></div>
         <div class="query-actions">
           <button onclick="runQuery()">&#9654; Run (Ctrl+Enter)</button>
           <button class="secondary" onclick="clearResults()">Clear</button>
         </div>
       </div>
+      <div class="query-controls">
+        <label>Log Type:</label>
+        <select id="log-type" onchange="onLogTypeChange()">
+          <option value="">All Logs</option>
+          <option value="zcop-application">Application</option>
+          <option value="zcop-cache">Cache</option>
+          <option value="zcop-scheduler">Scheduler</option>
+          <option value="zcop-kafka">Kafka</option>
+        </select>
+      </div>
       <div class="quick-queries">
-        <span class="quick-btn" onclick="setQuery(`SELECT * FROM logs ORDER BY timestamp DESC LIMIT 200`)">Recent 200</span>
-        <span class="quick-btn" onclick="setQuery(`SELECT * FROM logs WHERE level = 'ERROR' ORDER BY timestamp DESC LIMIT 100`)">Errors</span>
-        <span class="quick-btn" onclick="setQuery(`SELECT level, COUNT(*) AS cnt FROM logs GROUP BY level ORDER BY cnt DESC`)">By Level</span>
-        <span class="quick-btn" onclick="setQuery(`SELECT uri, COUNT(*) AS cnt FROM logs WHERE uri IS NOT NULL GROUP BY uri ORDER BY cnt DESC LIMIT 20`)">Top Endpoints</span>
-        <span class="quick-btn" onclick="setQuery(`SELECT uid, COUNT(*) AS cnt FROM logs WHERE uid != 'anon' GROUP BY uid ORDER BY cnt DESC LIMIT 20`)">Top Users</span>
-        <span class="quick-btn" onclick="setQuery(`SELECT rid, COUNT(*) AS cnt FROM logs GROUP BY rid HAVING COUNT(*) > 5 ORDER BY cnt DESC LIMIT 20`)">Long Requests</span>
-        <span class="quick-btn" onclick="setQuery(`SELECT logger, COUNT(*) AS cnt FROM logs WHERE level = 'ERROR' GROUP BY logger ORDER BY cnt DESC LIMIT 15`)">Error Sources</span>
-        <span class="quick-btn" onclick="setQuery(`SELECT * FROM logs WHERE msg REGEX 'timeout|connection refused|exception' LIMIT 100`)">Exceptions</span>
+        <div class="quick-section">
+          <span class="quick-label">Select</span>
+          <span class="quick-btn" onclick="setQuery(`SELECT * FROM logs ORDER BY timestamp DESC LIMIT 200`)">Recent 200</span>
+          <span class="quick-btn" onclick="setQuery(`SELECT * FROM logs WHERE level = 'ERROR' ORDER BY timestamp DESC LIMIT 100`)">Errors</span>
+          <span class="quick-btn" onclick="setQuery(`SELECT * FROM logs WHERE msg REGEX 'timeout|connection refused|exception' LIMIT 100`)">Exceptions</span>
+        </div>
+        <div class="quick-section">
+          <span class="quick-label">Group</span>
+          <span class="quick-btn" onclick="setQuery(`SELECT level, COUNT(*) AS cnt FROM logs GROUP BY level ORDER BY cnt DESC`)">By Level</span>
+          <span class="quick-btn" onclick="setQuery(`SELECT file, COUNT(*) AS cnt FROM logs GROUP BY file ORDER BY cnt DESC`)">By Log File</span>
+          <span class="quick-btn" onclick="setQuery(`SELECT logger, COUNT(*) AS cnt FROM logs WHERE level = 'ERROR' GROUP BY logger ORDER BY cnt DESC LIMIT 15`)">Error Sources</span>
+          <span class="quick-btn" onclick="setQuery(`SELECT uri, COUNT(*) AS cnt FROM logs WHERE uri IS NOT NULL GROUP BY uri ORDER BY cnt DESC LIMIT 20`)">Top Endpoints</span>
+          <span class="quick-btn" onclick="setQuery(`SELECT uid, COUNT(*) AS cnt FROM logs WHERE uid != '' GROUP BY uid ORDER BY cnt DESC LIMIT 20`)">Top Users</span>
+        </div>
+        <div class="quick-section">
+          <span class="quick-label">Agg</span>
+          <span class="quick-btn" onclick="setQuery(`SELECT rid, COUNT(*) AS cnt FROM logs GROUP BY rid HAVING COUNT(*) > 5 ORDER BY cnt DESC LIMIT 20`)">Long Requests</span>
+          <span class="quick-btn" onclick="setQuery(`SELECT level, file, COUNT(*) AS cnt FROM logs GROUP BY level, file ORDER BY cnt DESC`)">Level x File</span>
+          <span class="quick-btn" onclick="setQuery(`SELECT logger, level, COUNT(*) AS cnt FROM logs GROUP BY logger, level HAVING COUNT(*) > 3 ORDER BY cnt DESC LIMIT 30`)">Logger x Level</span>
+        </div>
       </div>
       <div class="query-meta">
         <span id="q-rows">--</span>
@@ -134,6 +181,14 @@ tbody tr:hover td{white-space:normal;word-break:break-word}
         <option value="WARNING">WARN</option>
         <option value="INFO">INFO</option>
         <option value="DEBUG">DEBUG</option>
+      </select>
+      <label>Log:</label>
+      <select id="tail-file" onchange="updateTailFilter()">
+        <option value="">All Files</option>
+        <option value="zcop-application">Application</option>
+        <option value="zcop-cache">Cache</option>
+        <option value="zcop-scheduler">Scheduler</option>
+        <option value="zcop-kafka">Kafka</option>
       </select>
       <label>RID:</label>
       <input id="tail-rid" placeholder="request id" oninput="updateTailFilter()" style="width:100px">
@@ -173,17 +228,160 @@ document.querySelectorAll('.tab').forEach(tab => {
   };
 });
 
-// --- Query ---
+// --- Log Type filter ---
+function onLogTypeChange() {
+  // Inject file filter into the current query if the user picks a log type
+  const logType = document.getElementById('log-type').value;
+  if (!logType) return;
+  const sql = sqlEl.value.trim();
+  // If query already has a WHERE, add AND file LIKE; otherwise add WHERE
+  const fileClause = "file LIKE '%" + logType + "%'";
+  if (!sql) {
+    sqlEl.value = "SELECT * FROM logs WHERE " + fileClause + " ORDER BY timestamp DESC LIMIT 200";
+  }
+}
+
+// --- Word-level autocomplete (DBeaver-style) ---
+const AC_WORDS = [
+  // keywords
+  {w:'SELECT',t:'kw'},{w:'FROM',t:'kw'},{w:'WHERE',t:'kw'},{w:'AND',t:'kw'},{w:'OR',t:'kw'},
+  {w:'NOT',t:'kw'},{w:'AS',t:'kw'},{w:'DISTINCT',t:'kw'},{w:'LIKE',t:'kw'},{w:'REGEX',t:'kw'},
+  {w:'BETWEEN',t:'kw'},{w:'IN',t:'kw'},{w:'IS',t:'kw'},{w:'NULL',t:'kw'},
+  {w:'ORDER',t:'kw'},{w:'BY',t:'kw'},{w:'GROUP',t:'kw'},{w:'HAVING',t:'kw'},
+  {w:'LIMIT',t:'kw'},{w:'OFFSET',t:'kw'},{w:'ASC',t:'kw'},{w:'DESC',t:'kw'},
+  // columns
+  {w:'timestamp',t:'col'},{w:'level',t:'col'},{w:'thread',t:'col'},{w:'rid',t:'col'},
+  {w:'uid',t:'col'},{w:'uri',t:'col'},{w:'logger',t:'col'},{w:'msg',t:'col'},{w:'file',t:'col'},
+  // table
+  {w:'logs',t:'table'},
+  // aggregates
+  {w:'COUNT',t:'fn'},{w:'SUM',t:'fn'},{w:'AVG',t:'fn'},{w:'MIN',t:'fn'},{w:'MAX',t:'fn'},
+  // values (level)
+  {w:"'ERROR'",t:'val'},{w:"'WARNING'",t:'val'},{w:"'INFO'",t:'val'},{w:"'DEBUG'",t:'val'},
+];
+let acIndex = -1;
+
 const sqlEl = document.getElementById('sql');
+const acDropdown = document.getElementById('ac-dropdown');
+
+// Extract the partial word at cursor
+function cursorWord() {
+  const pos = sqlEl.selectionStart;
+  const text = sqlEl.value.substring(0, pos);
+  const m = text.match(/[\w']+$/);
+  return { partial: m ? m[0] : '', start: m ? pos - m[0].length : pos, pos };
+}
+
+// Get pixel position of cursor in textarea for dropdown placement
+function getCursorXY() {
+  const mirror = document.createElement('div');
+  const style = getComputedStyle(sqlEl);
+  ['fontFamily','fontSize','fontWeight','letterSpacing','wordSpacing',
+   'paddingLeft','paddingTop','borderLeftWidth','borderTopWidth','lineHeight'
+  ].forEach(p => mirror.style[p] = style[p]);
+  mirror.style.position = 'absolute';
+  mirror.style.visibility = 'hidden';
+  mirror.style.whiteSpace = 'pre-wrap';
+  mirror.style.wordBreak = 'break-word';
+  mirror.style.width = style.width;
+  const text = sqlEl.value.substring(0, sqlEl.selectionStart);
+  mirror.textContent = text;
+  const marker = document.createElement('span');
+  marker.textContent = '|';
+  mirror.appendChild(marker);
+  document.body.appendChild(mirror);
+  const rect = sqlEl.getBoundingClientRect();
+  const mx = marker.offsetLeft;
+  const my = marker.offsetTop;
+  document.body.removeChild(mirror);
+  return {
+    x: rect.left + mx - sqlEl.scrollLeft + parseFloat(style.borderLeftWidth),
+    y: rect.top + my - sqlEl.scrollTop + parseFloat(style.borderTopWidth) + parseFloat(style.lineHeight || style.fontSize)
+  };
+}
+
+function getMatches() {
+  const {partial} = cursorWord();
+  if (!partial || partial.length < 1) return [];
+  const upper = partial.toUpperCase();
+  // For quoted values like 'ER → match against the value including quote
+  return AC_WORDS.filter(item => {
+    const wu = item.w.toUpperCase();
+    return wu.startsWith(upper) && wu !== upper;
+  }).slice(0, 8);
+}
+
 sqlEl.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runQuery(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); hideAC(); runQuery(); return; }
+  if (acDropdown.classList.contains('visible')) {
+    const items = acDropdown.querySelectorAll('.ac-item');
+    if (e.key === 'ArrowDown') { e.preventDefault(); acIndex = Math.min(acIndex+1, items.length-1); highlightAC(items); return; }
+    if (e.key === 'ArrowUp') { e.preventDefault(); acIndex = Math.max(acIndex-1, 0); highlightAC(items); return; }
+    if ((e.key === 'Enter' || e.key === 'Tab') && acIndex >= 0) { e.preventDefault(); applyAC(items[acIndex]); return; }
+    if (e.key === 'Tab' && items.length > 0) { e.preventDefault(); applyAC(items[0]); return; }
+    if (e.key === 'Escape') { e.preventDefault(); hideAC(); return; }
+  }
+  if (e.key === ' ' && e.ctrlKey) { e.preventDefault(); showAC(); }
 });
 
-function setQuery(q) { sqlEl.value = q; runQuery(); }
+sqlEl.addEventListener('input', () => showAC());
+
+function showAC() {
+  const matches = getMatches();
+  if (matches.length === 0) { hideAC(); return; }
+  acIndex = 0;
+  acDropdown.innerHTML = matches.map((m,i) =>
+    '<div class="ac-item' + (i===0?' selected':'') + '" data-w="' + esc(m.w) + '">' +
+    '<span>' + esc(m.w) + '</span>' +
+    '<span class="ac-type">' + m.t + '</span></div>'
+  ).join('');
+  acDropdown.querySelectorAll('.ac-item').forEach(it => {
+    it.addEventListener('mousedown', e => { e.preventDefault(); applyAC(it); });
+  });
+  // Position at cursor
+  const pos = getCursorXY();
+  acDropdown.style.left = Math.min(pos.x, window.innerWidth - 270) + 'px';
+  acDropdown.style.top = (pos.y + 4) + 'px';
+  acDropdown.classList.add('visible');
+}
+
+function hideAC() { acDropdown.classList.remove('visible'); acIndex = -1; }
+
+function highlightAC(items) {
+  items.forEach((it, i) => it.classList.toggle('selected', i === acIndex));
+  if (acIndex >= 0) items[acIndex].scrollIntoView({block:'nearest'});
+}
+
+function applyAC(el) {
+  const word = el.getAttribute('data-w');
+  const {start, pos} = cursorWord();
+  const after = sqlEl.value.substring(pos);
+  const addSpace = !word.endsWith('(') && !after.startsWith(' ') && !after.startsWith(')');
+  sqlEl.value = sqlEl.value.substring(0, start) + word + (addSpace ? ' ' : '') + after;
+  const newPos = start + word.length + (addSpace ? 1 : 0);
+  sqlEl.selectionStart = sqlEl.selectionEnd = newPos;
+  hideAC();
+  sqlEl.focus();
+}
+
+document.addEventListener('click', e => { if (!sqlEl.contains(e.target) && !acDropdown.contains(e.target)) hideAC(); });
+
+function setQuery(q) { sqlEl.value = q; hideAC(); runQuery(); }
 
 async function runQuery() {
-  const sql = sqlEl.value.trim();
+  let sql = sqlEl.value.trim();
   if (!sql) return;
+  // Inject log type filter if selected and not already in query
+  const logType = document.getElementById('log-type').value;
+  if (logType && !sql.toUpperCase().includes('FILE')) {
+    const clause = "file LIKE '%" + logType + "%'";
+    const upper = sql.toUpperCase();
+    if (upper.includes('WHERE')) {
+      sql = sql.replace(/WHERE/i, 'WHERE ' + clause + ' AND');
+    } else if (upper.includes('FROM LOGS')) {
+      sql = sql.replace(/FROM\s+logs/i, 'FROM logs WHERE ' + clause);
+    }
+  }
   const el = document.getElementById('results');
   el.innerHTML = '<div class="empty">Running...</div>';
   try {
@@ -222,17 +420,100 @@ function renderResults(data) {
     cols.forEach(c => {
       let val = row[c] ?? '';
       let cls = '';
-      if (c === 'level') cls = ' class="level-' + String(val).toLowerCase() + '"';
+      const sv = String(val);
+      if (c === 'level') cls = ' class="level-' + sv.toLowerCase() + '"';
       if (c === 'rid' && val) {
-        html += '<td><a href="#" onclick="traceFromTable(\'' + esc(String(val)) + '\');return false" style="color:var(--accent)">' + esc(String(val)) + '</a></td>';
+        html += '<td><a href="#" onclick="traceFromTable(\'' + esc(sv) + '\');return false" style="color:var(--accent)">' + esc(sv) + '</a></td>';
+      } else if ((c === 'msg' || c === 'message') && sv.length > 120) {
+        const id = 'msg-' + Math.random().toString(36).slice(2,8);
+        html += '<td id="' + id + '"' + cls + '>' + esc(sv.slice(0,120)) + '... <button class="expand-btn" onclick="toggleExpand(\'' + id + '\',this)">&plus; Expand</button></td>';
+        // store full text in data attribute via DOM after render
       } else {
-        html += '<td' + cls + '>' + esc(String(val)) + '</td>';
+        html += '<td' + cls + '>' + esc(sv) + '</td>';
       }
     });
     html += '</tr>';
   });
   html += '</tbody></table>';
   el.innerHTML = html;
+  // Store full messages for expand — map cell ID to full text
+  window._fullMessages = {};
+  const msgColIdx = cols.findIndex(c => c === 'msg' || c === 'message');
+  if (msgColIdx >= 0) {
+    el.querySelectorAll('td[id^="msg-"]').forEach(cell => {
+      const tr = cell.closest('tr');
+      const rowIdx = Array.from(tr.parentElement.children).indexOf(tr);
+      if (data.rows[rowIdx]) {
+        window._fullMessages[cell.id] = String(data.rows[rowIdx][cols[msgColIdx]] || '');
+      }
+    });
+  }
+}
+
+// Format stack traces with syntax highlighting
+function formatStackTrace(text) {
+  const escaped = esc(text);
+  const lines = escaped.split('\n');
+  let hasStack = lines.some(l => /^\s*(at |Caused by|\.\.\. \d+ more)/.test(l));
+  if (!hasStack) return '<div class="msg-text">' + escaped + '</div>';
+  let html = '';
+  let inStack = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // "at com.foo.Bar.method(File.java:123)"
+    const atMatch = trimmed.match(/^at\s+((\S+)\.(\w+))\(([^:)]+?)(?::(\d+))?\)$/);
+    if (atMatch) {
+      if (!inStack) { html += '<div class="stacktrace">'; inStack = true; }
+      const pkg = atMatch[2];
+      const method = atMatch[3];
+      const file = atMatch[4];
+      const lineNo = atMatch[5];
+      html += '<div><span class="st-at">at </span>';
+      html += '<span class="st-class">' + pkg + '</span>.';
+      html += '<span class="st-method">' + method + '</span>';
+      html += '(<span class="st-file">' + file + '</span>';
+      if (lineNo) html += ':<span class="st-line">' + lineNo + '</span>';
+      html += ')</div>';
+      continue;
+    }
+    // "Caused by: com.foo.SomeException: message"
+    if (/^Caused by:/.test(trimmed)) {
+      if (!inStack) { html += '<div class="stacktrace">'; inStack = true; }
+      html += '<div><span class="st-caused">' + trimmed + '</span></div>';
+      continue;
+    }
+    // "... 42 more"
+    if (/^\.\.\.\s+\d+\s+more/.test(trimmed)) {
+      if (!inStack) { html += '<div class="stacktrace">'; inStack = true; }
+      html += '<div><span class="st-more">' + trimmed + '</span></div>';
+      continue;
+    }
+    // Exception line (e.g. "java.lang.NullPointerException: ...")
+    if (/^[\w$.]+Exception/.test(trimmed) || /^[\w$.]+Error/.test(trimmed)) {
+      if (!inStack) { html += '<div class="stacktrace">'; inStack = true; }
+      html += '<div><span class="st-exception">' + trimmed + '</span></div>';
+      continue;
+    }
+    // Regular message line
+    if (inStack) { html += '</div>'; inStack = false; }
+    html += '<div class="msg-text">' + line + '</div>';
+  }
+  if (inStack) html += '</div>';
+  return html;
+}
+
+function toggleExpand(cellId, btn) {
+  const cell = document.getElementById(cellId);
+  if (!cell) return;
+  if (cell.classList.contains('expanded')) {
+    const full = window._fullMessages[cellId] || '';
+    cell.classList.remove('expanded');
+    cell.innerHTML = esc(full.slice(0,120)) + '... <button class="expand-btn" onclick="toggleExpand(\'' + cellId + '\',this)">&plus; Expand</button>';
+  } else {
+    const full = window._fullMessages[cellId] || '';
+    cell.classList.add('expanded');
+    cell.innerHTML = formatStackTrace(full) + ' <button class="expand-btn" onclick="toggleExpand(\'' + cellId + '\',this)">&minus; Collapse</button>';
+  }
 }
 
 function clearResults() {
@@ -261,7 +542,11 @@ function connectWS() {
   ws.onmessage = e => {
     try {
       const data = JSON.parse(e.data);
-      if (data.type === 'log') appendTailLine(data);
+      if (data.type === 'log') {
+        const fileFilter = document.getElementById('tail-file').value;
+        if (fileFilter && data.file && !data.file.includes(fileFilter)) return;
+        appendTailLine(data);
+      }
     } catch(err) {}
   };
 }
@@ -277,7 +562,6 @@ function appendTailLine(d) {
     '<span class="tail-rid" onclick="traceFromTail(\'' + esc(d.rid||'') + '\')">' + esc(d.rid||'') + '</span>' +
     '<span class="tail-msg">' + esc(d.msg||'') + '</span>';
   container.appendChild(line);
-  // Keep max 2000 lines
   while (container.children.length > 2000) container.removeChild(container.firstChild);
   if (document.getElementById('tail-autoscroll').checked) {
     container.scrollTop = container.scrollHeight;
@@ -309,7 +593,7 @@ async function traceRequest() {
       el.innerHTML = '<div class="empty"><h3>No logs found for RID: ' + esc(rid) + '</h3></div>';
       return;
     }
-    let html = '<div style="padding:4px 0 12px;color:var(--text-muted);font-size:12px">Request <b style="color:var(--accent)">' + esc(rid) + '</b> — ' + data.count + ' log entries</div>';
+    let html = '<div style="padding:4px 0 12px;color:var(--text-muted);font-size:13px">Request <b style="color:var(--accent)">' + esc(rid) + '</b> &mdash; ' + data.count + ' log entries</div>';
     data.logs.forEach(log => {
       const lvl = (log.level||'').toLowerCase();
       const cls = lvl === 'error' ? ' trace-error' : '';
@@ -354,7 +638,7 @@ async function loadStats() {
     if (data.oldestEntry && data.newestEntry) {
       const from = data.oldestEntry.slice(0,16).replace('T',' ');
       const to = data.newestEntry.slice(0,16).replace('T',' ');
-      document.getElementById('stat-range').textContent = from + ' → ' + to;
+      document.getElementById('stat-range').textContent = from + ' \u2192 ' + to;
     }
   } catch(e) {}
 }

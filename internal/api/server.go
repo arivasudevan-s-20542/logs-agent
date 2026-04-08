@@ -13,27 +13,29 @@ import (
 type Server struct {
 	cfg   *config.Config
 	store *store.Store
+	index *store.FileIndex
 	mux   *http.ServeMux
 }
 
-func NewServer(cfg *config.Config, s *store.Store) *Server {
-	srv := &Server{cfg: cfg, store: s, mux: http.NewServeMux()}
+func NewServer(cfg *config.Config, s *store.Store, idx *store.FileIndex) *Server {
+	srv := &Server{cfg: cfg, store: s, index: idx, mux: http.NewServeMux()}
 	srv.routes()
 	return srv
 }
 
 func (s *Server) routes() {
-	h := &Handlers{store: s.store}
+	h := &Handlers{store: s.store, index: s.index}
 
 	s.mux.HandleFunc("POST /api/query", h.Query)
 	s.mux.HandleFunc("GET /api/trace/{rid}", h.Trace)
 	s.mux.HandleFunc("GET /api/stats", h.Stats)
 	s.mux.HandleFunc("GET /api/files", h.Files)
+	s.mux.HandleFunc("GET /api/files/index", h.FileIndex)
 	s.mux.HandleFunc("GET /api/levels", h.Levels)
 	s.mux.HandleFunc("GET /api/tail", h.Tail)
 	s.mux.HandleFunc("GET /api/health", h.Health)
 
-	s.mux.Handle("GET /", http.FileServer(http.FS(staticFS())))
+	s.mux.Handle("GET /", noCacheWrap(http.FileServer(http.FS(staticFS()))))
 }
 
 func (s *Server) Handler() http.Handler {
@@ -54,6 +56,13 @@ func (s *Server) ListenAndServe() error {
 	addr := s.cfg.Addr()
 	log.Printf("[server] listening on http://%s", addr)
 	return http.ListenAndServe(addr, s.Handler())
+}
+
+func noCacheWrap(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func logMiddleware(next http.Handler) http.Handler {

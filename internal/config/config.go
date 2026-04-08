@@ -30,6 +30,12 @@ type Config struct {
 	// Tailer
 	PollInterval time.Duration `json:"pollInterval"`
 	ReadArchived bool          `json:"readArchived"`
+	HotWindow    time.Duration `json:"hotWindow"` // Only auto-load files within this window (0 = load all)
+
+	// MCP
+	MCPPort       int      `json:"mcpPort"`
+	MCPToken      string   `json:"mcpToken"`
+	MCPAllowedIPs []string `json:"mcpAllowedIPs"`
 
 	// CORS
 	CORSOrigins []string `json:"corsOrigins"`
@@ -49,6 +55,8 @@ func Default() *Config {
 		FlushInterval: 5 * time.Second,
 		PollInterval:  500 * time.Millisecond,
 		ReadArchived:  false,
+		HotWindow:     24 * time.Hour,
+		MCPPort:       4081,
 		CORSOrigins:   []string{"*"},
 	}
 }
@@ -89,6 +97,22 @@ func (c *Config) LoadFromEnv() {
 	}
 	if v := os.Getenv("LOG_AGENT_READ_ARCHIVED"); v == "true" {
 		c.ReadArchived = true
+	}
+	if v := os.Getenv("LOG_AGENT_HOT_WINDOW"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			c.HotWindow = d
+		}
+	}
+	if v := os.Getenv("LOG_AGENT_MCP_PORT"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			c.MCPPort = n
+		}
+	}
+	if v := os.Getenv("LOG_AGENT_MCP_TOKEN"); v != "" {
+		c.MCPToken = v
+	}
+	if v := os.Getenv("LOG_AGENT_MCP_ALLOWED_IPS"); v != "" {
+		c.MCPAllowedIPs = splitCSV(v)
 	}
 }
 
