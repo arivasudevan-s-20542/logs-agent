@@ -3,8 +3,7 @@
 //
 // Jenkins runs ON the VPS — deploy is a direct local cp + systemctl restart.
 //
-// Jenkins Tools required (Manage Jenkins → Tools):
-//   Go: name = "Go122"  (Go 1.22)
+// Requires Go 1.22+ installed on the VPS and available in PATH.
 //
 // GitHub webhook:
 //   Payload URL: http://<VPS_IP>:8080/github-webhook/
@@ -13,10 +12,6 @@
 
 pipeline {
     agent any
-
-    tools {
-        go 'Go122'
-    }
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
