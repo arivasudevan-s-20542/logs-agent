@@ -61,10 +61,6 @@ pipeline {
         }
 
         stage('Deploy') {
-            when {
-                anyOf { branch 'main'; branch 'master' }
-                not { changeRequest() }
-            }
             steps {
                 sh '''
                     set -e
