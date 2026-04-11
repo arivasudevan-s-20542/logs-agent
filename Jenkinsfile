@@ -22,6 +22,9 @@ pipeline {
 
     environment {
         INSTALL_DIR  = '/opt/zcop-log-agent'
+        GOROOT       = '/var/lib/jenkins/go-sdk/go'
+        PATH         = "/var/lib/jenkins/go-sdk/go/bin:${env.PATH}"
+        GOPATH       = '/var/lib/jenkins/go'
         CGO_ENABLED  = '0'
         GOOS         = 'linux'
         GOARCH       = 'amd64'
