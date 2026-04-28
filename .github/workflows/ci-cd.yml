@@ -19,10 +19,7 @@
 name: CI/CD — Log Agent
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
+  workflow_dispatch:  # Disabled — using Jenkins CI/CD now
 
 jobs:
   # ── 1. Build & Vet ──────────────────────────────────────────────────────
